@@ -1,0 +1,13 @@
+# There is no build step and no runtime dependency to install. Nothing should
+# ever be generated inside the checkout: the cache and the daemon files live in
+# the herdr plugin state directory, the tests write to temp directories, and the
+# demo writes under /tmp/aspire-hud-demo. These entries keep editor, OS and npm
+# noise out.
+.DS_Store
+*.log
+node_modules/
+coverage/
+*.tgz
+.idea/
+.vscode/
+.claude/settings.local.json

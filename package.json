@@ -1,0 +1,44 @@
+{
+  "name": "herdr-aspire-hud",
+  "version": "0.1.0",
+  "description": "herdr plugin: a sidebar badge and a live popup for the .NET Aspire AppHost running in each worktree",
+  "license": "MIT",
+  "author": "H3xept",
+  "homepage": "https://github.com/H3xept/herdr-aspire-hud#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/H3xept/herdr-aspire-hud.git"
+  },
+  "bugs": {
+    "url": "https://github.com/H3xept/herdr-aspire-hud/issues"
+  },
+  "type": "module",
+  "bin": {
+    "aspire-hud": "bin/aspire-hud"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "herdr-plugin.toml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "check": "for f in bin/aspire-hud lib/*.mjs; do node --check \"$f\" || exit 1; done",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "herdr",
+    "herdr-plugin",
+    "aspire",
+    "dotnet-aspire",
+    "apphost",
+    "terminal",
+    "tui",
+    "plugin"
+  ]
+}

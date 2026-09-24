@@ -1,0 +1,79 @@
+name: Bug report
+description: The badge, the HUD, the daemon or a stop does something wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Remove paths, dashboard tokens and secrets from
+        everything you paste. For a security problem, do not use this form: see
+        SECURITY.md.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The smallest set of steps that shows the problem.
+      placeholder: |
+        1. Start an AppHost with `aspire run` in a worktree that has a space.
+        2. Open the HUD.
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of `bin/aspire-hud status`
+      description: The daemon state and what its last poll saw. It does not call aspire.
+      render: text
+
+  - type: textarea
+    id: describe
+    attributes:
+      label: Resource JSON
+      description: |
+        For a wrong badge or a wrong level, paste the resource from
+        `aspire describe --apphost <path> --format Json`. Remove environment
+        variables and secrets.
+      render: json
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Output of `bin/aspire-hud version`.
+    validations:
+      required: true
+
+  - type: input
+    id: aspire-version
+    attributes:
+      label: Aspire version
+      description: Output of `aspire --version`.
+    validations:
+      required: true
+
+  - type: input
+    id: herdr-version
+    attributes:
+      label: herdr version
+      description: Output of `herdr --version`.
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS and Node version, for example `macOS 15, Node 22.4`.
+    validations:
+      required: true

@@ -1,0 +1,35 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Two gates on every supported Node and platform. The syntax gate parses every
+  # shipped file, because a syntax error in a module only the daemon loads
+  # ships silently otherwise. The test gate runs the whole suite, which is fully
+  # offline by design: no aspire, no herdr, no Docker and no network, so CI runs
+  # exactly what a contributor runs.
+  check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Parse every shipped file
+        run: npm run check
+
+      - name: Run the suite
+        run: npm test

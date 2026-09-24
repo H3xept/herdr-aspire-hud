@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest a change to the badge, the HUD or the daemon.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Some requests have a smaller answer: a configuration key, a herdr
+        keybinding, or a change in herdr itself. Describe the problem first;
+        the solution can follow.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you try to do, and why the plugin makes it hard today.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you want the plugin to do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other ways to solve the problem that you considered.
+
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Rules
+      description: The proposal keeps the rules in CONTRIBUTING.md.
+      options:
+        - label: It adds no runtime dependency.
+        - label: It never passes `--force` to `aspire stop`.
+        - label: Every new aspire call goes through the shared cache.

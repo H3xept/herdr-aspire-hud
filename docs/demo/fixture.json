@@ -1,0 +1,63 @@
+{
+  "_comment": "Fictional AppHosts and herdr spaces for the demo. `~` is the demo HOME that env.sh sets. `up` is how long before the demo started each AppHost came up; `at` is a resource's creation offset after that, in seconds.",
+  "spaces": [
+    { "id": "w1", "label": "shop", "checkout": "~/src/shop/main", "repo": "shop", "focused": true },
+    { "id": "w2", "label": "shop-feat-checkout", "checkout": "~/src/shop-feat-checkout", "repo": "shop", "linked": true },
+    { "id": "w3", "label": "billing", "checkout": "~/src/billing", "repo": "billing" },
+    { "id": "w4", "label": "dotfiles", "checkout": "~/src/dotfiles", "repo": "dotfiles" }
+  ],
+  "apphosts": [
+    {
+      "path": "~/src/shop/main/src/Shop.AppHost/Shop.AppHost.csproj",
+      "pid": 48213, "cliPid": 48190, "port": 17043, "up": 11550,
+      "resources": [
+        { "name": "postgres", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:5432"] },
+        { "name": "catalogdb", "type": "PostgresDatabase", "state": "Running", "health": "Healthy", "at": 2 },
+        { "name": "redis", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:6379"] },
+        { "name": "migrations", "type": "Project", "state": "Finished", "exitCode": 0, "at": 4 },
+        { "name": "catalog-api", "type": "Project", "state": "Running", "health": "Healthy", "at": 6, "urls": ["https://localhost:7101", "http://localhost:5101"] },
+        { "name": "basket-api", "type": "Project", "state": "Running", "health": "Healthy", "at": 6, "urls": ["https://localhost:7102"] },
+        { "name": "web", "type": "Project", "state": "Running", "health": "Healthy", "at": 8, "urls": ["https://localhost:7000"] },
+        { "name": "worker", "type": "Project", "state": "Running", "at": 8 },
+        { "name": "seed-data", "type": "Executable", "state": "NotStarted" },
+        { "name": "postgres-password", "type": "Parameter", "state": "Running" }
+      ]
+    },
+    {
+      "path": "~/src/shop-feat-checkout/src/Shop.AppHost/Shop.AppHost.csproj",
+      "pid": 51877, "cliPid": 51860, "port": 17189, "up": 38,
+      "resources": [
+        { "name": "postgres", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:5433"] },
+        { "name": "catalogdb", "type": "PostgresDatabase", "state": "Running", "health": "Healthy", "at": 2 },
+        { "name": "redis", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:6380"] },
+        { "name": "migrations", "type": "Project", "state": "Finished", "exitCode": 0, "at": 4 },
+        { "name": "catalog-api", "type": "Project", "state": "Running", "health": "Healthy", "at": 6, "urls": ["https://localhost:7201"] },
+        { "name": "basket-api", "type": "Project", "state": "Running", "health": "Unhealthy", "at": 6, "urls": ["https://localhost:7202"] },
+        { "name": "web", "type": "Project", "state": "Waiting", "at": 8 },
+        { "name": "worker", "type": "Project", "state": "Starting", "at": 8 },
+        { "name": "postgres-password", "type": "Parameter", "state": "Running" }
+      ]
+    },
+    {
+      "path": "~/src/billing/apphost.cs",
+      "pid": 50342, "cliPid": 50311, "port": 17311, "up": 742,
+      "resources": [
+        { "name": "sqlserver", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:1433"] },
+        { "name": "stripe-mock", "type": "Container", "state": "FailedToStart", "at": 1 },
+        { "name": "invoicer", "type": "Project", "state": "Exited", "exitCode": 139, "at": 5, "urls": ["https://localhost:7301"] },
+        { "name": "ledger-api", "type": "Project", "state": "Running", "health": "Healthy", "at": 5, "urls": ["https://localhost:7302"] },
+        { "name": "stripe-key", "type": "Parameter", "state": "Running" }
+      ]
+    },
+    {
+      "path": "~/src/notify/apphost.ts",
+      "pid": 39920, "cliPid": 39901, "port": 17420, "up": 187200,
+      "resources": [
+        { "name": "rabbitmq", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["tcp://localhost:5672", "http://localhost:15672"] },
+        { "name": "mailpit", "type": "Container", "state": "Running", "health": "Healthy", "urls": ["http://localhost:8025"] },
+        { "name": "dispatcher", "type": "Executable", "state": "Running", "health": "Healthy", "at": 3, "urls": ["http://localhost:3100"] },
+        { "name": "webhooks", "type": "Executable", "state": "Running", "at": 3, "urls": ["http://localhost:3101"] }
+      ]
+    }
+  ]
+}

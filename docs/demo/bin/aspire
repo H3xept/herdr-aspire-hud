@@ -1,0 +1,131 @@
+#!/usr/bin/env node
+// A stand-in for the Aspire CLI, for the demo recordings only.
+//
+// It answers the three calls the plugin makes, with the JSON shapes Aspire
+// 13.5 prints, from the fictional AppHosts in ../fixture.json:
+//
+//   aspire ps --format Json
+//   aspire describe --apphost <path> --format Json
+//   aspire stop --apphost <path>
+//
+// `stop` records the AppHost in a state file, so the next `ps` leaves it out.
+// The state file also holds the demo's start time, so uptimes grow the way a
+// real AppHost's would. Nothing here starts or stops a real process.
+//
+// Demo scaffolding only: docs/ is not shipped, and nothing in lib/ or bin/
+// refers to it.
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const fixture = JSON.parse(readFileSync(join(here, '..', 'fixture.json'), 'utf8'));
+const stateFile = process.env.ASPIRE_DEMO_STATE || '/tmp/aspire-hud-demo/aspire-state.json';
+
+// Answers take about as long as the real CLI's, so the HUD's "refreshing…"
+// is on screen long enough to read.
+const DELAY_MS = { ps: 250, describe: 350, stop: 1800 };
+
+const home = (path) => path.replace(/^~(?=\/)/, homedir());
+const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+function readState() {
+  try { return JSON.parse(readFileSync(stateFile, 'utf8')); } catch { /* first call */ }
+  const state = { epoch: Date.now(), stopped: [] };
+  writeState(state);
+  return state;
+}
+
+function writeState(state) {
+  mkdirSync(dirname(stateFile), { recursive: true });
+  writeFileSync(stateFile, `${JSON.stringify(state)}\n`);
+}
+
+// A replica suffix, like the one Aspire appends to a resource name. Derived
+// from the name so every call prints the same one.
+function suffix(name) {
+  let h = 7;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return Array.from({ length: 5 }, (_, i) => 'abcdefghjkmnpqrstuvwxyz'[(h >>> (i * 5)) % 23]).join('');
+}
+
+function running(state) {
+  return fixture.apphosts.filter((a) => !state.stopped.includes(home(a.path)));
+}
+
+function psEntry(a) {
+  return {
+    appHostPath: home(a.path),
+    appHostPid: a.pid,
+    cliPid: a.cliPid,
+    status: 'Running',
+    sdkVersion: '13.5.2',
+    dashboardUrl: `https://localhost:${a.port}/login?t=${suffix(a.path)}${suffix(a.path.slice(1))}`,
+  };
+}
+
+function resource(a, r, epoch) {
+  const iso = (offsetS) => new Date(epoch - (a.up - offsetS) * 1000).toISOString();
+  const project = r.type === 'Project' || r.type === 'Executable';
+  return {
+    name: project ? `${r.name}-${suffix(a.path + r.name)}` : r.name,
+    displayName: r.name,
+    resourceType: r.type,
+    state: r.state,
+    healthStatus: r.health ?? null,
+    exitCode: r.exitCode ?? null,
+    creationTimestamp: iso(r.at ?? 0),
+    startTimestamp: r.state === 'NotStarted' ? null : iso((r.at ?? 0) + 1),
+    urls: (r.urls ?? []).map((url, i) => ({ name: i === 0 ? url.split(':')[0] : `${url.split(':')[0]}-${i}`, url, isInternal: false })),
+  };
+}
+
+function option(args, name) {
+  const at = args.indexOf(name);
+  return at < 0 ? undefined : args[at + 1];
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const [verb] = args;
+  const state = readState();
+  await sleep(DELAY_MS[verb] ?? 0);
+
+  switch (verb) {
+    case 'ps':
+      process.stdout.write(`${JSON.stringify(running(state).map(psEntry), null, 2)}\n`);
+      return 0;
+
+    case 'describe': {
+      const path = option(args, '--apphost');
+      const apphost = running(state).find((a) => home(a.path) === path);
+      if (!apphost) {
+        process.stderr.write(`No running AppHost found at ${path}.\n`);
+        return 7;
+      }
+      const resources = apphost.resources.map((r) => resource(apphost, r, state.epoch));
+      process.stdout.write(`${JSON.stringify({ resources }, null, 2)}\n`);
+      return 0;
+    }
+
+    case 'stop': {
+      const path = option(args, '--apphost');
+      if (!running(state).some((a) => home(a.path) === path)) {
+        process.stderr.write(`No running AppHost found at ${path}.\n`);
+        return 7;
+      }
+      // Re-read: a concurrent stop may have written since this one started.
+      const now = readState();
+      writeState({ ...now, stopped: [...now.stopped, path] });
+      process.stdout.write('AppHost stopped successfully.\n');
+      return 0;
+    }
+
+    default:
+      process.stderr.write(`demo aspire: no fixture for "${args.join(' ')}"\n`);
+      return 1;
+  }
+}
+
+process.exitCode = await main();

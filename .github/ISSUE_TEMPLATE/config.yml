@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/H3xept/herdr-aspire-hud/security/advisories/new
+    about: Report a security problem privately. Do not open a public issue.
+  - name: herdr
+    url: https://herdr.dev
+    about: A problem in herdr itself, not in this plugin, belongs to herdr.

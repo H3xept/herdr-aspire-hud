@@ -1,0 +1,65 @@
+# Aspire AppHosts — live Aspire AppHost state for every herdr space.
+# https://github.com/H3xept/herdr-aspire-hud
+#
+# Link it from a checkout:   herdr plugin link /path/to/this/repo
+#
+# Node >= 20, no dependencies. Needs the Aspire CLI (`aspire`) on PATH, in
+# ~/.aspire/bin, or named by ASPIRE_BIN in the plugin's config.env.
+
+id = "h3xept.aspire-hud"
+name = "Aspire AppHosts"
+version = "0.1.0"
+min_herdr_version = "0.8.0"
+description = "Sidebar badge and live popup for the Aspire AppHost running in each worktree"
+platforms = ["linux", "macos"]
+
+# The badge daemon polls `aspire ps` and `aspire describe` and writes one
+# `$aspire_*` token per space. Tokens carry a TTL, so a dead daemon's badges
+# clear themselves; the startup hook brings the daemon back with the server.
+[[startup]]
+command = ["node", "bin/aspire-hud", "daemon", "start"]
+
+# The HUD: every running AppHost, the selected one expanded to its resources.
+# A popup keeps the tiled layout untouched and takes every key, including Esc.
+[[panes]]
+id = "hud"
+title = "Aspire AppHosts"
+placement = "popup"
+width = "90%"
+height = "80%"
+command = ["node", "bin/aspire-hud", "hud"]
+
+# Bind this to open the HUD.
+[[actions]]
+id = "open"
+title = "Open Aspire AppHosts"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "bin/aspire-hud", "open-hud"]
+
+# Skips the 20s aspire cache and repaints the badges now.
+[[actions]]
+id = "refresh"
+title = "Refresh Aspire AppHosts now"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "bin/aspire-hud", "refresh"]
+
+# Stops every AppHost in the space it is invoked from (`aspire stop`, then
+# signals if that fails). No confirmation, so it is not bound by default; the
+# HUD's `x` asks first.
+[[actions]]
+id = "stop-apphost"
+title = "Stop this space's Aspire AppHost"
+contexts = ["workspace", "pane"]
+command = ["node", "bin/aspire-hud", "stop-apphost"]
+
+[[actions]]
+id = "start"
+title = "Start the Aspire badge daemon"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "bin/aspire-hud", "daemon", "start"]
+
+[[actions]]
+id = "stop"
+title = "Stop the Aspire badge daemon and clear badges"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "bin/aspire-hud", "daemon", "stop"]

@@ -1,0 +1,178 @@
+#!/usr/bin/env node
+// aspire-hud — live Aspire AppHost state for every herdr space.
+//
+// Every verb is reachable as a plugin action, a keybinding, or from a shell.
+// See README.md for the sidebar rows and the keybinding.
+import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { listAppHosts, stopAppHosts } from '../lib/aspire.mjs';
+import { forgetAppHosts, poll } from '../lib/collect.mjs';
+import * as daemon from '../lib/daemon.mjs';
+import { runHud } from '../lib/hud.mjs';
+import { PLUGIN_ID, aspireBin, config, herdrBin, pluginContext } from '../lib/env.mjs';
+import { mapToSpaces } from '../lib/model.mjs';
+import { listSpaces, send } from '../lib/socket.mjs';
+import { daemonPid, logPath } from '../lib/state.mjs';
+
+// package.json is the one version source; herdr-plugin.toml repeats it, and a
+// test keeps the two equal.
+const { version: VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+const HELP = `aspire-hud ${VERSION} — live Aspire AppHost state for every herdr space
+
+USAGE
+  aspire-hud <verb>
+
+VERBS
+  hud                 the interactive HUD (runs inside a herdr popup)
+  open-hud            ask herdr to open the HUD popup
+  stop-apphost [path…] stop AppHosts: the given AppHost files, or with no
+                      paths, every AppHost in the invoking space's worktree
+  refresh             skip the 20s cache: ask aspire now, repaint the badges
+  daemon start        start the sidebar badge daemon (no-op if running)
+  daemon stop         stop it and clear its badges
+  daemon run          run it in the foreground
+  status              daemon state and what its last poll saw
+  clear               clear this plugin's badges from every space
+  version, help
+
+The daemon writes one of $aspire_ok, $aspire_warn, $aspire_down on each space
+whose worktree holds a running AppHost. Herdr draws a plugin token only where
+[ui.sidebar.spaces] rows mention it; see README.md. Aspire answers are cached
+for ASPIRE_HUD_CACHE_TTL (20s); the daemon and the HUD refresh on that period.`;
+
+async function notify(title, body) {
+  try { await send([{ method: 'notification.show', params: { title, body } }]); } catch { /* best effort */ }
+}
+
+function status() {
+  const pid = daemonPid();
+  const last = daemon.lastPoll();
+  const lines = [
+    `daemon   ${pid ? `running (pid ${pid})` : 'stopped'}`,
+    `aspire   ${aspireBin()}`,
+    `config   ${JSON.stringify(config())}`,
+    `log      ${logPath()}`,
+  ];
+  if (last) {
+    lines.push(`polled   ${Math.round((Date.now() - last.at) / 1000)}s ago`, '');
+    for (const a of last.apphosts) {
+      const where = a.spaces.length ? a.spaces.join(', ') : '(no space)';
+      lines.push(`  ${(a.badge ?? '-').padEnd(8)} ${a.level.padEnd(8)} ${where.padEnd(28)} ${a.appHostPath}${a.error ? `  ! ${a.error}` : ''}`);
+    }
+  }
+  process.stdout.write(`${lines.join('\n')}\n`);
+}
+
+// With no paths, the target is "this space": the space the action was invoked
+// from, which is what a keybinding means.
+async function stopCommand(paths) {
+  const running = await listAppHosts();
+  let targets;
+  if (paths.length) {
+    targets = running.filter((a) => paths.includes(a.appHostPath));
+    const missing = paths.filter((p) => !targets.some((a) => a.appHostPath === p));
+    if (missing.length) process.stderr.write(`not running: ${missing.join(', ')}\n`);
+  } else {
+    const space = pluginContext().workspace_id ?? process.env.HERDR_WORKSPACE_ID;
+    if (!space) throw new Error('no space in context; pass AppHost paths');
+    const bySpace = mapToSpaces(running, await listSpaces());
+    targets = running.filter((a) => bySpace.get(a.appHostPath).includes(space));
+  }
+  if (targets.length === 0) {
+    process.stdout.write('no running AppHost to stop\n');
+    await notify('◆ aspire-hud', 'no running AppHost in this space');
+    return;
+  }
+  const results = await stopAppHosts(targets);
+  const lines = [...results].map(([path, r]) => `${r.how.padEnd(8)} ${path}${r.error ? `  (${r.error})` : ''}`);
+  process.stdout.write(`${lines.join('\n')}\n`);
+  forgetAppHosts([...results].filter(([, r]) => r.how !== 'failed').map(([path]) => path));
+  daemon.nudge();
+  const failed = [...results.values()].filter((r) => r.how === 'failed').length;
+  await notify(
+    failed ? '◆ AppHost stop failed' : '◆ AppHost stopped',
+    [...results].map(([path, r]) => `${r.how}: ${path.split('/').slice(-4).join('/')}`).join('\n'),
+  );
+  if (failed) process.exitCode = 1;
+}
+
+// Skip the cache: ask aspire about every AppHost now, then have the daemon
+// repaint the badges from the result.
+async function refreshCommand() {
+  const snap = await poll({ fresh: true });
+  const nudged = daemon.nudge();
+  process.stdout.write(`refreshed ${snap.apphosts.length} AppHost${snap.apphosts.length === 1 ? '' : 's'}${nudged ? '; badges repainting' : ''}\n`);
+}
+
+async function main() {
+  const [verb, sub] = process.argv.slice(2);
+  switch (verb) {
+    case 'hud':
+      process.exit(await runHud());
+      break;
+
+    case 'stop-apphost':
+      await stopCommand(process.argv.slice(3));
+      break;
+
+    case 'refresh':
+      await refreshCommand();
+      break;
+
+    case 'open-hud': {
+      const child = spawn(herdrBin(), ['plugin', 'pane', 'open', '--plugin', PLUGIN_ID, '--entrypoint', 'hud'], { stdio: 'inherit' });
+      child.on('exit', (code) => process.exit(code ?? 0));
+      return;
+    }
+
+    case 'daemon':
+      switch (sub) {
+        case 'start': {
+          const r = daemon.start();
+          process.stdout.write(r.started ? `started (pid ${r.pid})\n` : `already running (pid ${r.pid})\n`);
+          break;
+        }
+        case 'stop': {
+          const pid = await daemon.stop();
+          process.stdout.write(pid ? `stopped (pid ${pid})\n` : 'not running\n');
+          break;
+        }
+        case 'run':
+          await daemon.run();
+          break;
+        default:
+          throw new Error('daemon needs start, stop, or run');
+      }
+      break;
+
+    case 'status':
+      status();
+      break;
+
+    case 'clear': {
+      const n = await daemon.clearAll();
+      process.stdout.write(`cleared badges on ${n} spaces${daemonPid() ? ' (the daemon repaints on its next poll)' : ''}\n`);
+      break;
+    }
+
+    case 'version':
+      process.stdout.write(`${VERSION}\n`);
+      break;
+
+    case undefined: case 'help': case '--help': case '-h':
+      process.stdout.write(`${HELP}\n`);
+      break;
+
+    default:
+      process.stderr.write(`unknown verb "${verb}"\n\n${HELP}\n`);
+      process.exit(2);
+  }
+}
+
+main().catch(async (e) => {
+  const message = e?.message || String(e);
+  process.stderr.write(`${message}\n`);
+  if (process.env.HERDR_PLUGIN_ID) await notify('◆ aspire-hud failed', message);
+  process.exit(1);
+});
