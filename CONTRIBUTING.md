@@ -103,6 +103,10 @@ brew install vhs gifsicle   # vhs brings ttyd and ffmpeg
 bash docs/demo/record.sh
 ```
 
+`docs/badges.gif` also needs herdr: its tape runs a real herdr server with its
+own config, state and socket under `/tmp/aspire-hud-herdr`, and never connects
+to your herdr.
+
 A recording uses only the demo fixtures. **It never shows a real AppHost, a
 real path, or a real dashboard token.** Keep it that way: a GIF is the most
 public artifact in the repo.

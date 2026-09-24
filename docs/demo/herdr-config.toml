@@ -1,0 +1,43 @@
+# The herdr config.toml of the badges recording. herdr-demo.sh copies it into
+# the throwaway $XDG_CONFIG_HOME/herdr; it never touches ~/.config/herdr.
+#
+# The sidebar rows are the README's Install snippet, as a user would paste it.
+# The keybinding is the README's too, but on prefix+a: vhs types through ttyd,
+# which does not deliver alt+a to herdr. The rest keeps the recording quiet
+# and offline.
+
+onboarding = false
+
+[theme]
+name = "tokyo-night"
+
+[terminal]
+default_shell = "/bin/bash"
+
+[update]
+version_check = false
+manifest_check = false
+
+[ui]
+sidebar_width = 40
+sidebar_max_width = 40
+hide_tab_bar_when_single_tab = true
+
+[ui.sound]
+enabled = false
+
+[ui.sidebar.spaces]
+row_gap = 1
+rows = [
+  ["state_icon", "workspace",
+    { token = "$aspire_ok", fg = "#3fb950" },
+    { token = "$aspire_warn", fg = "#d29922" },
+    { token = "$aspire_down", fg = "#f85149", bold = true },
+  ],
+]
+
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "h3xept.aspire-hud.open"
+description = "Aspire AppHosts"

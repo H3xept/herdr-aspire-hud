@@ -81,6 +81,10 @@ rows = [
 The daemon sets at most one of the three tokens per space. It uses one token per
 level because herdr colors a token by its name.
 
+<div align="center">
+  <img src="docs/badges.gif" alt="A herdr sidebar with these rows: starting the daemon puts a green ◆ 8/8 on shop, a yellow ◆ 5/8 on shop-feat-checkout and a red ◆ 2/4 on billing; stopping billing from the popup clears its badge" width="100%">
+</div>
+
 ### Keybinding
 
 Bind the popup to a key:
@@ -310,8 +314,9 @@ bin/aspire-hud hud
 `env.sh` points `ASPIRE_BIN`, `HERDR_SOCKET_PATH` and the plugin directories
 under `/tmp/aspire-hud-demo`, so it never touches your real herdr state.
 
-To record the GIFs again (needs [VHS](https://github.com/charmbracelet/vhs) and
-`gifsicle`):
+To record the GIFs again (needs [VHS](https://github.com/charmbracelet/vhs),
+`gifsicle`, and for `docs/badges.gif` herdr itself, which runs as a throwaway
+server under `/tmp/aspire-hud-herdr`):
 
 ```bash
 bash docs/demo/record.sh
