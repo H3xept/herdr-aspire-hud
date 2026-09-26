@@ -56,12 +56,26 @@ There are no npm dependencies.
 ## Install
 
 ```bash
+herdr plugin install H3xept/herdr-aspire-hud
+herdr plugin action invoke h3xept.aspire-hud.start   # startup hooks run only when the herdr server starts
+```
+
+Or link a checkout, to hack on it:
+
+```bash
 git clone https://github.com/H3xept/herdr-aspire-hud
 herdr plugin link "$PWD/herdr-aspire-hud"
-herdr plugin action invoke h3xept.aspire-hud.start   # startup hooks do not run on link
+herdr plugin action invoke h3xept.aspire-hud.start
 ```
 
 The `[[startup]]` hook starts the daemon with the herdr server from then on.
+
+The plugin runs as your user, with your environment and the full herdr CLI.
+`herdr plugin install` shows the manifest and every command it runs before it
+installs; read them, and pin a revision with `--ref <tag-or-sha>` if you want
+one. See herdr's
+[trust and security guidance](https://herdr.dev/docs/plugins/#trust-and-security)
+and [SECURITY.md](SECURITY.md).
 
 ### Sidebar rows
 

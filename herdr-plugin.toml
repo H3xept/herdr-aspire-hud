@@ -1,6 +1,7 @@
 # Aspire AppHosts — live Aspire AppHost state for every herdr space.
 # https://github.com/H3xept/herdr-aspire-hud
 #
+# Install it from GitHub:    herdr plugin install H3xept/herdr-aspire-hud
 # Link it from a checkout:   herdr plugin link /path/to/this/repo
 #
 # Node >= 20, no dependencies. Needs the Aspire CLI (`aspire`) on PATH, in

@@ -3,6 +3,13 @@
 All notable changes appear in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- Install from GitHub with `herdr plugin install H3xept/herdr-aspire-hud`. The
+  README says what the install preview shows and how to pin a revision.
+
 ## [0.1.0] - 2026-09-25
 
 First public release. The plugin id is `h3xept.aspire-hud`.
